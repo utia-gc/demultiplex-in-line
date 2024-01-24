@@ -8,6 +8,11 @@ workflow {
             size: 2,
             checkIfExists: true
         )
+        // change shape of read pairs channel
+        // make flatter, i.e. [metadata, R1, R2]
+        .map { metadata, reads ->
+            [ metadata, reads[0], reads[1] ]
+        }
         .set { ch_readPairs }
     ch_readPairs.dump(tag: "ch_readPairs")
 }
