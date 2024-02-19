@@ -1,5 +1,11 @@
 process cutadapt_demultiplex {
+    tag "${metadata}"
+
     label 'cutadapt'
+
+    label 'med_cpu'
+    label 'med_mem'
+    label 'med_time'
 
     input:
         tuple val(metadata), path(reads1), path(reads2)
@@ -17,6 +23,7 @@ process cutadapt_demultiplex {
         cutadapt \\
             --no-indels \\
             --action none \\
+            --cores ${task.cpus} \\
             -g ^file:${barcodes} \\
             --output {name}_${metadata}_R2.fastq.gz \\
             --paired-output {name}_${metadata}_R1.fastq.gz \\
