@@ -43,6 +43,8 @@ workflow {
             def demuxName = (demuxRead.getName() =~ /(.*)_S\d+_L\d{3}_R[12]_001.fastq.gz/)[0][1]
             [ demuxName, demuxRead ]
         }
+        // group files with same demultiplexed read name
+        .groupTuple()
         .set { ch_keyedDemuxReads }
     ch_keyedDemuxReads.dump(tag: 'Keyed demultiplexed reads')
 
@@ -54,4 +56,10 @@ workflow {
         }
         .set { ch_keyedSampleDecodes }
     ch_keyedSampleDecodes.dump(tag: 'Keyed sample decodes')
+
+    // join sample decodes and demultiplexed reads by the demultiplexed name grouping key
+    ch_keyedSampleDecodes
+        .join(ch_keyedDemuxReads)
+        .set { ch_decodeDemuxReads }
+    ch_decodeDemuxReads.dump(tag: 'Decode demultiplexed reads')
 }
