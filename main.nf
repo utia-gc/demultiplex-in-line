@@ -1,5 +1,7 @@
 nextflow.enable.dsl=2
 
+include { Parse_Samplesheet } from './subworkflows/parse_samplesheet.nf'
+
 workflow {
     Channel
         .fromFilePairs(
@@ -16,14 +18,8 @@ workflow {
         .set { ch_readPairs }
     ch_readPairs.dump(tag: "ch_readPairs")
 
-    Channel
-        .fromPath( params.samplesheet, checkIfExists: true )
-        .splitCsv( header: true, sep: ',' )
-        .map { row ->
-            createSampleDecodesChannel(row)
-        }
-        .set { ch_sampleDecodes }
-    ch_sampleDecodes.dump(tag: "ch_sampleDecodes")
+    Parse_Samplesheet( params.samplesheet )
+    ch_sampleDecodes = Parse_Samplesheet.out.sampleDecodes
 
     cutadapt_demultiplex(
         ch_readPairs,
@@ -58,14 +54,4 @@ process cutadapt_demultiplex {
             ${reads2} ${reads1} \\
             > ${metadata}_cutadapt-log.txt
         """
-}
-
-
-def createSampleDecodesChannel(LinkedHashMap decodeRow) {
-    def dummyName = "${decodeRow.i7Index}_${decodeRow.i5Index}"
-    decodeRow.put('dummyName', dummyName)
-    def demuxName = "${decodeRow.inLineIndex}_${dummyName}"
-    decodeRow.put('demuxName', demuxName)
-
-    decodeRow
 }
