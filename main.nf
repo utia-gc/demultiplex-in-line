@@ -45,4 +45,13 @@ workflow {
         }
         .set { ch_keyedDemuxReads }
     ch_keyedDemuxReads.dump(tag: 'Keyed demultiplexed reads')
+
+    // add the demultiplexed name as a grouping key for sample name decode
+    ch_sampleDecodes
+        // pull out the demultiplexed read name as a grouping key
+        .map { sampleDecode ->
+            [ sampleDecode.demuxName, sampleDecode ]
+        }
+        .set { ch_keyedSampleDecodes }
+    ch_keyedSampleDecodes.dump(tag: 'Keyed sample decodes')
 }
