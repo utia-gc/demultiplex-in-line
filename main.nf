@@ -62,4 +62,15 @@ workflow {
         .join(ch_keyedDemuxReads)
         .set { ch_decodeDemuxReads }
     ch_decodeDemuxReads.dump(tag: 'Decode demultiplexed reads')
+
+    // copy demultiplexed reads to destination dir(s)
+    ch_decodeDemuxReads
+        .map { demuxName, sampleDecode, reads ->
+            reads.each { read ->
+                def decodeReadName = read.getName().replaceFirst(/${sampleDecode.demuxName}/, sampleDecode.sampleName)
+                def readDest = file(params.readsDestinationBaseDir).resolve(sampleDecode.project).resolve('fastq').resolve(decodeReadName)
+                read.copyTo(readDest)
+                log.info "Copied reads file: ${read} --> ${readDest}"
+            }
+        }
 }
