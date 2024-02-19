@@ -25,8 +25,8 @@ process cutadapt_demultiplex {
             --action none \\
             --cores ${task.cpus} \\
             -g ^file:${barcodes} \\
-            --output {name}_${metadata}_R2.fastq.gz \\
-            --paired-output {name}_${metadata}_R1.fastq.gz \\
+            --output {name}_${metadata}_R2_001.fastq.gz \\
+            --paired-output {name}_${metadata}_R1_001.fastq.gz \\
             ${reads2} ${reads1} \\
             > ${metadata}_cutadapt-log.txt
         """
