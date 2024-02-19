@@ -27,4 +27,22 @@ workflow {
         file("${projectDir}/assets/oligo_dt_in-line_primer_indexes.fasta")
     )
     cutadapt_demultiplex.out.demuxed.dump(tag: "Cutadapt demultiplexed reads")
+
+    ch_demuxReads = cutadapt_demultiplex.out.demuxed
+
+    // add the demultiplexed name as a grouping key for demultiplexed reads
+    ch_demuxReads
+        // get only the list of reads
+        .map { meta, reads ->
+            reads
+        }
+        // emit each read as a sole emission
+        .flatten()
+        // pull out the demultiplexed read name as a grouping key
+        .map { demuxRead ->
+            def demuxName = (demuxRead.getName() =~ /(.*)_S\d+_L\d{3}_R[12]_001.fastq.gz/)[0][1]
+            [ demuxName, demuxRead ]
+        }
+        .set { ch_keyedDemuxReads }
+    ch_keyedDemuxReads.dump(tag: 'Keyed demultiplexed reads')
 }
