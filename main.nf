@@ -6,7 +6,7 @@ include { Parse_Samplesheet    } from './subworkflows/parse_samplesheet.nf'
 workflow {
     Channel
         .fromFilePairs(
-            "${params.readsDir}/*_R{1,2}*.fastq.gz",
+            "${params.readsSourceDir}/*_R{1,2}*.fastq.gz",
             // all planned demultiplexing requires PE reads, so requiring 2 files be found makes sense
             size: 2,
             checkIfExists: true
