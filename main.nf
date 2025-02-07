@@ -24,7 +24,8 @@ workflow {
 
     cutadapt_demultiplex(
         ch_readPairs,
-        file("${projectDir}/assets/oligo_dt_in-line_primer_indexes.fasta")
+        file("${projectDir}/assets/oligo_dt_in-line_primer_indexes.fasta"),
+        params.errors
     )
     cutadapt_demultiplex.out.demuxed.dump(tag: "Cutadapt demultiplexed reads")
 

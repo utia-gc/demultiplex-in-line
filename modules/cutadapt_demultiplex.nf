@@ -10,6 +10,7 @@ process cutadapt_demultiplex {
     input:
         tuple val(metadata), path(reads1), path(reads2)
         path barcodes
+        val errors
 
     output:
         tuple val(metadata), path('*.fastq.gz'), emit: demuxed
@@ -25,6 +26,7 @@ process cutadapt_demultiplex {
             --action none \\
             --compression-level 6 \\
             --cores ${task.cpus} \\
+            --errors ${errors} \\
             -g ^file:${barcodes} \\
             --output {name}_${metadata}_R2_001.fastq.gz \\
             --paired-output {name}_${metadata}_R1_001.fastq.gz \\
