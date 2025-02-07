@@ -23,6 +23,7 @@ process cutadapt_demultiplex {
         cutadapt \\
             --no-indels \\
             --action none \\
+            --compression-level 6 \\
             --cores ${task.cpus} \\
             -g ^file:${barcodes} \\
             --output {name}_${metadata}_R2_001.fastq.gz \\
