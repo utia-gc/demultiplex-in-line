@@ -6,24 +6,34 @@ workflow Parse_Samplesheet {
         Channel
             .fromPath( samplesheet, checkIfExists: true )
             .splitCsv( header: true, sep: ',' )
-            .map { row ->
-                createSampleDecodesChannel(row)
+            /*
+             * Create a single massive map for all the decode samples
+             *
+             * This map has a single entry for each multiplexed sample name.
+             * Each multiplexed sample name has a map of in-line ID to demultiplexed sample name and project.
+             */
+            .collect()
+            .map {
+                LinkedHashMap sampleDecode = [:]
+                it.each{ row ->
+                    // put multiplexed sample name in sample decode with empty map if the name isn't already
+                    if (sampleDecode.get(row['multiplexedSampleName']) == null) {
+                        sampleDecode.put(row['multiplexedSampleName'], [:])
+                    }
+                    // add demultiplexed sample name and project for each in-line index
+                    sampleDecode[row['multiplexedSampleName']].put(
+                        row['inLineIndex'],
+                        [
+                            'demultiplexedSampleName': row['demultiplexedSampleName'],
+                            'project':                 row['project'],
+                        ]
+                    )
+                }
+
+                return sampleDecode
             }
             .set { ch_sampleDecodes }
-        ch_sampleDecodes.dump(tag: "ch_sampleDecodes")
 
     emit:
         sampleDecodes = ch_sampleDecodes
-}
-
-
-def createSampleDecodesChannel(LinkedHashMap decodeRow) {
-    // make dummy file name by composing the i7 and i5 indexes (if available)
-    def dummyName = decodeRow.i5Index ? "${decodeRow.i7Index}_${decodeRow.i5Index}" : "${decodeRow.i7Index}"
-    decodeRow.put('dummyName', dummyName)
-    // prepend in line index to the dummy name to generate the name of the demultiplexed sample
-    def demuxName = "${decodeRow.inLineIndex}_${dummyName}"
-    decodeRow.put('demuxName', demuxName)
-
-    decodeRow
 }

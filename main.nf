@@ -1,77 +1,82 @@
 nextflow.enable.dsl=2
 
 include { cutadapt_demultiplex } from './modules/cutadapt_demultiplex.nf'
+include { Parse_Read_Pairs     } from './subworkflows/parse_read_pairs.nf'
 include { Parse_Samplesheet    } from './subworkflows/parse_samplesheet.nf'
 
 workflow {
-    Channel
-        .fromFilePairs(
-            "${params.readsSourceDir}/*_R{1,2}*.fastq.gz",
-            // all planned demultiplexing requires PE reads, so requiring 2 files be found makes sense
-            size: 2,
-            checkIfExists: true
-        )
-        // change shape of read pairs channel
-        // make flatter, i.e. [metadata, R1, R2]
-        .map { metadata, reads ->
-            [ metadata, reads[0], reads[1] ]
-        }
-        .set { ch_readPairs }
-    ch_readPairs.dump(tag: "ch_readPairs")
+    Parse_Read_Pairs( params.readsSourceDir )
+    ch_readPairs = Parse_Read_Pairs.out.readPairs
+    ch_readPairs.dump(pretty: true, tag: 'ch_readPairs')
 
     Parse_Samplesheet( params.samplesheet )
     ch_sampleDecodes = Parse_Samplesheet.out.sampleDecodes
+    ch_sampleDecodes.dump(pretty: true, tag: 'ch_sampleDecodes')
+
+    // add decode information to parsed read pairs
+    ch_sampleDecodes
+        .combine(ch_readPairs)
+        .map { decode, multiplexedNameData, reads1, reads2 ->
+            multiplexedNameData['demultiplexDecode'] = decode.get(multiplexedNameData.multiplexedSampleName)
+
+            return [ multiplexedNameData, reads1, reads2 ]
+        }
+        // split into samples that are truly multiplexed vs those that aren't, i.e. soloplexed
+        // this keeps us from wasting time and decreasing read counts by demultiplexing samples that aren't actually multiplexed
+        .branch { sampleData, reads1, reads2 ->
+            multiplexed: sampleData.demultiplexDecode.size() > 1
+            soloplexed:  sampleData.demultiplexDecode.size() == 1
+        }
+        .set { ch_sampleDecodesReadPairs }
+    ch_sampleDecodesReadPairs.multiplexed
+        .dump(pretty: true, tag: 'ch_multiplexedReadPairs')
+        .set { ch_multiplexedReadPairs }
+    ch_sampleDecodesReadPairs.soloplexed
+        .dump(pretty: true, tag: 'ch_soloplexedReadPairs')
+        .set { ch_soloplexedReadPairs }
 
     cutadapt_demultiplex(
-        ch_readPairs,
-        file("${projectDir}/assets/oligo_dt_in-line_primer_indexes.fasta"),
+        ch_multiplexedReadPairs,
+        file("${projectDir}/assets/oligo_dt_in-line_primer_indexes.csv"),
         params.errors
-    )
-    cutadapt_demultiplex.out.demuxed.dump(tag: "Cutadapt demultiplexed reads")
+    ) 
+    cutadapt_demultiplex.out.demuxed
+        .dump(pretty: true, tag: "ch_demuxReads")
+        .set { ch_demuxReads }
 
-    ch_demuxReads = cutadapt_demultiplex.out.demuxed
-
-    // add the demultiplexed name as a grouping key for demultiplexed reads
     ch_demuxReads
-        // get only the list of reads
-        .map { meta, reads ->
-            reads
-        }
-        // emit each read as a sole emission
-        .flatten()
-        // pull out the demultiplexed read name as a grouping key
-        .map { demuxRead ->
-            def demuxName = (demuxRead.getName() =~ /(.*)_S\d+_L\d{3}_R[12]_001.fastq.gz/)[0][1]
-            [ demuxName, demuxRead ]
-        }
-        // group files with same demultiplexed read name
-        .groupTuple()
-        .set { ch_keyedDemuxReads }
-    ch_keyedDemuxReads.dump(tag: 'Keyed demultiplexed reads')
-
-    // add the demultiplexed name as a grouping key for sample name decode
-    ch_sampleDecodes
-        // pull out the demultiplexed read name as a grouping key
-        .map { sampleDecode ->
-            [ sampleDecode.demuxName, sampleDecode ]
-        }
-        .set { ch_keyedSampleDecodes }
-    ch_keyedSampleDecodes.dump(tag: 'Keyed sample decodes')
-
-    // join sample decodes and demultiplexed reads by the demultiplexed name grouping key
-    ch_keyedSampleDecodes
-        .join(ch_keyedDemuxReads)
-        .set { ch_decodeDemuxReads }
-    ch_decodeDemuxReads.dump(tag: 'Decode demultiplexed reads')
-
-    // copy demultiplexed reads to destination dir(s)
-    ch_decodeDemuxReads
-        .map { demuxName, sampleDecode, reads ->
+        .map { sampleData, reads ->
             reads.each { read ->
-                def decodeReadName = read.getName().replaceFirst(/${sampleDecode.demuxName}/, sampleDecode.sampleName)
-                def readDest = file(params.readsDestinationBaseDir).resolve(sampleDecode.project).resolve('fastq').resolve(decodeReadName)
-                read.copyTo(readDest)
-                log.info "Copied reads file: ${read} --> ${readDest}"
+                // get inline index ID for the read name
+                def inlineIndexIDMatcher = (read.getName() =~ /^IL\d+/)
+                def inlineIndexID = inlineIndexIDMatcher.find() ? inlineIndexIDMatcher[0] : null
+                // skip to next iteration if there was no match to an index ID
+                if (inlineIndexID == null | sampleData['demultiplexDecode'][inlineIndexID] == null) return
+
+                // replace demultiplexed sample name generated by cutadapt with the desired sample name
+                String demultiplexedSampleName = sampleData['demultiplexDecode'][inlineIndexID]['demultiplexedSampleName']
+                String demuxReadName = read.getName().replaceFirst(/^(.*)(?=_S\d+_L\d{3})/, demultiplexedSampleName)
+                // build destination read path
+                String project = sampleData['demultiplexDecode'][inlineIndexID]['project']
+                def readDestinationPath = file(params.readsDestinationBaseDir).resolve(project).resolve('fastq').resolve(demuxReadName)
+                // copy reads to desination
+                read.copyTo(readDestinationPath)
+                log.info "Copied reads file: ${read} --> ${readDestinationPath}"
+            }
+        }
+
+    ch_soloplexedReadPairs
+        .map { sampleData, reads1, reads2 ->
+            [reads1, reads2].each { read ->
+                // replace demultiplexed sample name generated by cutadapt with the desired sample name
+                String demultiplexedSampleName = "${sampleData['demultiplexDecode'].values().first()['demultiplexedSampleName']}"
+                String demuxReadName = read.getName().replaceFirst(/^(.*)(?=_S\d+_L\d{3})/, demultiplexedSampleName)
+                // build destination read path
+                String project = "${sampleData['demultiplexDecode'].values().first()['project']}"
+                def readDestinationPath = file(params.readsDestinationBaseDir).resolve(project).resolve('fastq').resolve(demuxReadName)
+                // copy reads to desination
+                read.copyTo(readDestinationPath)
+                log.info "Copied reads file: ${read} --> ${readDestinationPath}"
             }
         }
 }
