@@ -14,7 +14,7 @@ process cutadapt_demultiplex {
 
     output:
         tuple val(sampleData), path('IL*.fastq.gz'), emit: demuxed
-        path('*_cutadapt-log.txt'),                emit: log
+        path('*.cutadapt.json'),                     emit: log
 
     script:
         String multiplexedSampleName = "${sampleData.get('multiplexedSampleName')}_S${sampleData.get('sampleNumber')}_L${sampleData.get('lane')}"
@@ -46,9 +46,9 @@ process cutadapt_demultiplex {
             --cores ${task.cpus} \\
             --errors ${errors} \\
             -g ^file:barcodes.fasta \\
+            --json ${multiplexedSampleName}.cutadapt.json \\
             --output {name}_${multiplexedSampleName}_R2_001.fastq.gz \\
             --paired-output {name}_${multiplexedSampleName}_R1_001.fastq.gz \\
-            ${reads2} ${reads1} \\
-            > ${multiplexedSampleName}_cutadapt-log.txt
+            ${reads2} ${reads1}
         """
 }

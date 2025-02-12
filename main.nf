@@ -1,6 +1,7 @@
 nextflow.enable.dsl=2
 
 include { cutadapt_demultiplex } from './modules/cutadapt_demultiplex.nf'
+include { multiqc              } from './modules/multiqc'
 include { Parse_Read_Pairs     } from './subworkflows/parse_read_pairs.nf'
 include { Parse_Samplesheet    } from './subworkflows/parse_samplesheet.nf'
 
@@ -79,4 +80,18 @@ workflow {
                 log.info "Copied reads file: ${read} --> ${readDestinationPath}"
             }
         }
+
+    ch_multiqc = Channel.empty()
+        .concat(cutadapt_demultiplex.out.log)
+        .collect(
+            sort: { a, b ->
+                a.name <=> b.name
+            }
+        )
+        .dump(pretty: true, tag: 'ch_multiqc')
+    multiqc(
+        ch_multiqc,
+        file("${projectDir}/assets/multiqc_config.yaml"),
+        'demultiplex'
+    )
 }
