@@ -18,15 +18,19 @@ workflow {
     ch_sampleDecodes
         .combine(ch_readPairs)
         .map { decode, multiplexedNameData, reads1, reads2 ->
-            multiplexedNameData['demultiplexDecode'] = decode.get(multiplexedNameData.multiplexedSampleName)
+            multiplexedNameData['demultiplexDecode'] = decode.get(multiplexedNameData['multiplexedSampleName'])
 
             return [ multiplexedNameData, reads1, reads2 ]
+        }
+        // remove read pairs that don't have a demultiplexDecode
+        .filter { multiplexedNameData, reads1, reads2 ->
+            multiplexedNameData['demultiplexDecode'] != null
         }
         // split into samples that are truly multiplexed vs those that aren't, i.e. soloplexed
         // this keeps us from wasting time and decreasing read counts by demultiplexing samples that aren't actually multiplexed
         .branch { sampleData, reads1, reads2 ->
-            multiplexed: sampleData.demultiplexDecode.size() > 1
-            soloplexed:  sampleData.demultiplexDecode.size() == 1
+            multiplexed: sampleData['demultiplexDecode'].size() > 1
+            soloplexed:  sampleData['demultiplexDecode'].size() == 1
         }
         .set { ch_sampleDecodesReadPairs }
     ch_sampleDecodesReadPairs.multiplexed
