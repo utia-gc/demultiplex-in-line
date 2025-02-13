@@ -1,1 +1,18 @@
 show_analysis_paths: False
+custom_data:
+  percent_unknown:
+    id: "percent_unknown"
+    section_anchor: "percent_unknown"
+    section_name: "Percent Unknown Reads"
+    description: "Percent of reads from a multiplexed sample that are assigned to unknown reads file. Lower numbers are generally preferable."
+    file_format: "csv"
+    plot_type: "bargraph"
+    pconfig:
+      id: "percent_unknown"
+      title: "Percent unknown reads"
+      cpswitch: False
+      xlab: "Percent unknown reads"
+      tt_suffix: " %"
+sp:
+  percent_unknown:
+    fn: "percent-unknown.csv"
