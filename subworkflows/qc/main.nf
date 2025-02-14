@@ -16,8 +16,18 @@ workflow QC {
 
                 log.info """Sample: ${multiplexedSampleName} -- Input n reads: ${readCounts['input']} -- R1 w/ adapter: ${readCounts['read1_with_adapter']}"""
 
-                Float percentUnknown = 100 * (readCounts['input'] - readCounts['read1_with_adapter']) / readCounts['input']
-                log.info """Sample: ${multiplexedSampleName} -- Percent unknown: ${percentUnknown}"""
+                // break down calculation
+                Integer nTotalReads = readCounts['input']
+                Integer nDemultiplexedReads = readCounts['read1_with_adapter']
+                Integer nUnknownReads = nTotalReads - nDemultiplexedReads
+                Float proportionUnknown = nUnknownReads / nTotalReads
+                Float percentUnknown = 100 * proportionUnknown
+
+                log.info """Sample: ${multiplexedSampleName} -- Total reads: ${nTotalReads} -- R1 w/ adapter: ${nDemultiplexedReads} -- Unknown reads: ${nUnknownReads} -- Prop. unknown: ${proportionUnknown} -- Pct. Unknown: ${percentUnknown}"""
+
+
+                Float percentUnknownOneGo = 100 * (readCounts['input'] - readCounts['read1_with_adapter']) / readCounts['input']
+                log.info """Sample: ${multiplexedSampleName} -- Percent unknown: ${percentUnknownOneGo}"""
 
                 return [ multiplexedSampleName, percentUnknown ]
             }
