@@ -12,7 +12,7 @@ workflow QC {
                 String multiplexedSampleName = demuxLog.getName().replaceFirst(/\.cutadapt\.json/, '')
 
                 // parse demux log json file and compute percent unknown read counts
-                def readCounts = new groovy.json.JsonSlurper().parseText(demuxLog.text)['read_counts']
+                LinkedHashMap readCounts = new groovy.json.JsonSlurper().parseText(demuxLog.text)['read_counts']
                 Float percentUnknown = 100 * (readCounts['input'] - readCounts['read1_with_adapter']) / readCounts['input']
 
                 return [ multiplexedSampleName, percentUnknown ]
