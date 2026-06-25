@@ -1,0 +1,40 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "utia-gc/demultiplex-in-line params.samplesheet schema",
+	"description": "Schema for the samplesheet used as input to utia-gc/demultiplex-in-line",
+	"type": "array",
+	"items": {
+		"type": "object",
+		"required": [
+			"sample_fastq_prefix",
+			"inline",
+			"multiplexed_fastq_file_path_r1"
+		],
+		"properties": {
+			"sample_fastq_prefix": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Sample FASTQ prefix must be provided and cannot contain spaces"
+			},
+			"inline": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Inline barcode must be provided"
+			},
+			"multiplexed_fastq_file_path_r1": {
+				"type": "string",
+				"pattern": "^\\S+\\.f(ast)?q\\.gz$",
+				"format": "file-path",
+				"exists": true,
+				"errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+			},
+			"multiplexed_fastq_file_path_r2": {
+				"type": "string",
+				"pattern": "^\\S+\\.f(ast)?q\\.gz$",
+				"format": "file-path",
+				"exists": true,
+				"errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+			}
+		}
+	}
+}
