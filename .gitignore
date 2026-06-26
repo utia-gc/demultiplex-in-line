@@ -2,4 +2,5 @@
 *.fastq.gz
 .nextflow.log*
 .nextflow/
+results/
 work/
