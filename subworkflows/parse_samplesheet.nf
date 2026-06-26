@@ -27,7 +27,6 @@ workflow Parse_Samplesheet {
         .map { multiplexedFastqPrefix, multiplexedFastqFilePaths ->
             return [multiplexedFastqPrefix, multiplexedFastqFilePaths.head()]
         }
-    ch_multiplexedFastqs.view()
 
     ch_sampleInfo = ch_samplesheetComposite
         .map { multiplexedFastqPrefix, _multiplexedFastqFilePathR1, _multiplexedFastqFilePathR2, sampleFastqPrefix, inline ->
@@ -38,17 +37,14 @@ workflow Parse_Samplesheet {
             // don't really care about sort order, just need it to be deterministic
             return [multiplexedFastqPrefix, sampleInfo.toSorted()]
         }
-    ch_sampleInfo.view()
 
     ch_fqtkSamplesheet = collect_fqtk_samplesheet(ch_sampleInfo)
-    ch_fqtkSamplesheet.view { multiplexedFastqPrefix, fqtkSamplesheet -> println("${multiplexedFastqPrefix}: ${fqtkSamplesheet.name}\n${fqtkSamplesheet.text}") }
 
     ch_fastqsAndFqtkSamplesheet = ch_multiplexedFastqs
         .join(ch_fqtkSamplesheet, by: 0)
         .map { multiplexedFastqPrefix, multiplexedFastqs, fqtkSamplesheet ->
             return [multiplexedFastqPrefix, multiplexedFastqs[0], multiplexedFastqs[1], fqtkSamplesheet]
         }
-        .view()
 
     emit:
     fastqsAndFqtkSamplesheet = ch_fastqsAndFqtkSamplesheet
@@ -63,6 +59,8 @@ workflow Parse_Samplesheet {
  * @see https://docs.seqera.io/nextflow/tutorials/static-types-operators#collectfile
  */
 process collect_fqtk_samplesheet {
+    tag "${multiplexedFastqPrefix}"
+
     input:
     tuple val(multiplexedFastqPrefix), val(sampleInfo)
 
