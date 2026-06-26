@@ -12,18 +12,28 @@ workflow {
         params.readStructures,
         params.cliArgsFqtkDemux,
     )
+    ch_demuxFastqs = fqtk_demux.out.demuxFastqs.flatMap { multiplexedFastqPrefix, demuxFastqsR1, demuxFastqsR2 ->
+        demuxFastqsR1
+            .getIndices()
+            .collect { i -> tuple(multiplexedFastqPrefix, demuxFastqsR1[i], demuxFastqsR2[i]) }
+    }
+    ch_demuxMetrics = fqtk_demux.out.demuxMetrics
 
     publish:
-    demuxFastqs = fqtk_demux.out.demuxFastqs
-    demuxMetrics = fqtk_demux.out.demuxMetrics
+    demuxFastqs = ch_demuxFastqs
+    demuxMetrics = ch_demuxMetrics
 }
 
 output {
     demuxFastqs {
+        path { _multiplexedFastqPrefix, demuxFastqsR1, demuxFastqsR2 ->
+            demuxFastqsR1 >> "fastq/${demuxFastqsR1.name.replace('.R1.fq.gz', '_R1.fastq.gz')}"
+            demuxFastqsR2 >> "fastq/${demuxFastqsR2.name.replace('.R2.fq.gz', '_R2.fastq.gz')}"
+        }
     }
     demuxMetrics {
         path { multiplexedFastqPrefix, demuxMetrics ->
-            demuxMetrics >> "${multiplexedFastqPrefix}_demux-metrics.txt"
+            demuxMetrics >> "qc/demux-metrics/${multiplexedFastqPrefix}_demux-metrics.txt"
         }
     }
 }

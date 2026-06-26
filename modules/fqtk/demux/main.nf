@@ -13,7 +13,7 @@ process fqtk_demux {
     val cliArgs
 
     output:
-    tuple val(multiplexedFastqPrefix), path('*.fq.gz'), emit: demuxFastqs
+    tuple val(multiplexedFastqPrefix), path('*.R1.fq.gz'), path('*.R2.fq.gz'), emit: demuxFastqs
     tuple val(multiplexedFastqPrefix), path('demux-metrics.txt'), emit: demuxMetrics
 
     script:
