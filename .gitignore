@@ -1,6 +1,7 @@
 *.code-workspace
 *.fastq.gz
 .nextflow.log*
+.cache/
 .nextflow/
 results/
 work/
