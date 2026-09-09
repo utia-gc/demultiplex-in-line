@@ -1,0 +1,51 @@
+nextflow_pipeline {
+
+    name "Test Workflow main.nf"
+    script "main.nf"
+
+    test("main.nf fails -- no samplesheet.") {
+        tag 'nf-schema'
+        tag 'validate'
+
+        when {
+            params {
+                samplesheet = null
+                readStructures = "T+ T+"
+            }
+        }
+
+        then {
+            // nf-schema validateParameters() causes workflow failure with exit status 1 when required param(s) not supplied
+            assert workflow.failed
+            assert workflow.exitStatus == 1
+            // nf-schema validateParameters() throws error messages on stdout and stderr when required param(s) not supplied
+            assert workflow.stdout.contains('ERROR ~ Validation of pipeline parameters failed!')
+            assert workflow.stderr.contains('* Missing required parameter(s): samplesheet')
+        }
+
+    }
+
+
+    test("main.nf fails -- no readStructures.") {
+        tag 'nf-schema'
+        tag 'validate'
+
+        when {
+            params {
+                samplesheet = "${projectDir}/tests/data/samplesheets/takara_3pde_samplesheet.csv"
+                readStructures = null
+            }
+        }
+
+        then {
+            // nf-schema validateParameters() causes workflow failure with exit status 1 when required param(s) not supplied
+            assert workflow.failed
+            assert workflow.exitStatus == 1
+            // nf-schema validateParameters() throws error messages on stdout and stderr when required param(s) not supplied
+            assert workflow.stdout.contains('ERROR ~ Validation of pipeline parameters failed!')
+            assert workflow.stderr.contains('* Missing required parameter(s): readStructures')
+        }
+
+    }
+
+}

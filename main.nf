@@ -1,9 +1,13 @@
 include { fqtk_demux } from './modules/fqtk/demux'
 include { Parse_Samplesheet } from './subworkflows/parse_samplesheet.nf'
 
+include { validateParameters } from 'plugin/nf-schema'
+
 workflow {
 
     main:
+    validateParameters()
+
     ch_fastqsAndFqtkSamplesheet = Parse_Samplesheet(params.samplesheet).fastqsAndFqtkSamplesheet
     ch_fastqsAndFqtkSamplesheet.view(tag: 'input')
 

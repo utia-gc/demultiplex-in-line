@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/utia-gc/demultiplex-in-line//nextflow_schema.json",
+  "title": "utia-gc/demultiplex-in-line pipeline parameters",
+  "description": "Demultiplex in-line indexes.",
+  "type": "object",
+  "properties": {
+    "samplesheet": {
+      "type": "string",
+      "format": "file-path"
+    },
+    "readStructures": {
+      "type": "string",
+      "description": "Passed to `--read-structures` argument of `fqtk demux`."
+    },
+    "cliArgsFqtkDemux": {
+      "type": "string"
+    }
+  },
+  "required": ["samplesheet", "readStructures"]
+}
