@@ -1,5 +1,5 @@
 .PHONY: test_data
-test_data: .cache/sentinels/sim_illumina_pe_fastqs.sentinel .cache/sentinels/create_sim_takara_3pde.sentinel
+test_data: tests/data/samplesheets/takara_3pde_samplesheet.csv
 	@echo "Made test data files"
 
 .cache/sentinels/sim_illumina_pe_fastqs.sentinel: src/bash/sim_illumina_pe_fastqs.sh
@@ -11,3 +11,5 @@ test_data: .cache/sentinels/sim_illumina_pe_fastqs.sentinel .cache/sentinels/cre
 	@mkdir -p $(@D)
 	@bash src/bash/create_sim_takara_3pde.sh
 	@touch $@
+
+tests/data/samplesheets/takara_3pde_samplesheet.csv: src/bash/build_takara_3pde_samplesheet.sh .cache/sentinels/create_sim_takara_3pde.sentinel
