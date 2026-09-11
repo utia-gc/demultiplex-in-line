@@ -109,6 +109,10 @@ nextflow_pipeline {
                     path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R1_001.fastq.gz"),
                     path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R2_001.fastq.gz")
                 ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R2_001.fastq.gz")
+                ],
             ]
             // test that pipeline produces expected FASTQ files
             // FASTQs should have Illumina-style name, exist on disk, contain the same number reads, and be reproducible
