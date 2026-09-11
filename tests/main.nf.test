@@ -5,12 +5,11 @@ nextflow_pipeline {
 
     test("main.nf fails -- no samplesheet.") {
         tag 'nf-schema'
-        tag 'validate'
 
         when {
             params {
                 samplesheet = null
-                readStructures = "T+ T+"
+                readStructures = "+T +T"
             }
         }
 
@@ -28,7 +27,6 @@ nextflow_pipeline {
 
     test("main.nf fails -- no readStructures.") {
         tag 'nf-schema'
-        tag 'validate'
 
         when {
             params {
@@ -48,4 +46,81 @@ nextflow_pipeline {
 
     }
 
+
+    test("main.nf copies single-row files -- Takara SMART-Seq mRNA 3'DE") {
+        tag 'takara-smart-seq-mrna-3p-de'
+
+        when {
+            params {
+                samplesheet = "${projectDir}/tests/data/samplesheets/takara_3pde_samplesheet_single-row.csv"
+                readStructures = "+T 6B+T"
+            }
+        }
+
+        then {
+            // test workflow status
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 2
+
+            // test that pipeline produces expected FASTQ files
+            // FASTQs should have Illumina-style name, exist on disk, contain the same number reads, and be reproducible
+            def r1Path = path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R1_001.fastq.gz")
+            def r2Path = path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R2_001.fastq.gz")
+            assert r1Path.exists()
+            assert r2Path.exists()
+            assert r1Path.linesGzip.size() == r2Path.linesGzip.size()
+            assert snapshot(
+                r1Path,
+                r2Path
+            ).match()
+            // FASTQs should contain the same number of reads as the input files
+            assert r1Path.linesGzip.size() == 200000
+            assert r2Path.linesGzip.size() == 200000
+        }
+
+    }
+
+
+    test("main.nf produces child FASTQs from single parent files -- Takara SMART-Seq mRNA 3'DE") {
+        tag 'takara-smart-seq-mrna-3p-de'
+
+        when {
+            params {
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet_single-parent-set.csv"
+                readStructures = "+T 6B+T"
+            }
+        }
+
+        then {
+            // test workflow status
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 2
+
+            def expectedFastqPairs = [
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R2_001.fastq.gz")
+                ],
+            ]
+            // test that pipeline produces expected FASTQ files
+            // FASTQs should have Illumina-style name, exist on disk, contain the same number reads, and be reproducible
+            expectedFastqPairs.each { r1Path, r2Path ->
+                assert r1Path.exists()
+                assert r2Path.exists()
+                assert r1Path.linesGzip.size() == r2Path.linesGzip.size()
+            }
+
+            // test reproducibility of fastqs
+            assert snapshot(expectedFastqPairs.flatten()).match()
+        }
+
+    }
 }
