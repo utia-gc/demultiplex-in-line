@@ -30,7 +30,7 @@ nextflow_pipeline {
 
         when {
             params {
-                samplesheet = "${projectDir}/tests/data/samplesheets/takara_3pde_samplesheet.csv"
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet.csv"
                 readStructures = null
             }
         }
@@ -52,7 +52,7 @@ nextflow_pipeline {
 
         when {
             params {
-                samplesheet = "${projectDir}/tests/data/samplesheets/takara_3pde_samplesheet_single-row.csv"
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet_single-row.csv"
                 readStructures = "+T 6B+T"
             }
         }
@@ -115,6 +115,137 @@ nextflow_pipeline {
                 [
                     path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R1_001.fastq.gz"),
                     path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R2_001.fastq.gz")
+                ],
+            ]
+            // test that pipeline produces expected FASTQ files
+            // FASTQs should have Illumina-style name, exist on disk, contain the same number reads, and be reproducible
+            expectedFastqPairs.each { r1Path, r2Path ->
+                assert r1Path.exists()
+                assert r2Path.exists()
+                assert r1Path.linesGzip.size() == r2Path.linesGzip.size()
+            }
+
+            // test reproducibility of fastqs
+            assert snapshot(expectedFastqPairs.flatten()).match()
+        }
+
+    }
+
+
+    test("main.nf demultiplexes when full samplesheet used -- Takara SMART-Seq mRNA 3'DE") {
+        tag 'takara-smart-seq-mrna-3p-de'
+
+        when {
+            params {
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet.csv"
+                readStructures = "+T 6B+T"
+            }
+        }
+
+        then {
+            // test workflow status
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 12
+
+            def expectedFastqPairs = [
+                // files for 'fizz' study
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L002_R2_001.fastq.gz")
+                ],
+                // files for 'buzz' study
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L002_R2_001.fastq.gz")
+                ],
+                // unmatched files
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-0_seed-11_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-0_seed-11_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-1_seed-12_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-1_seed-12_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-2_seed-21_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-2_seed-21_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-3_seed-22_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-3_seed-22_S2_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-5_seed-32_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-5_seed-32_S3_L002_R2_001.fastq.gz")
                 ],
             ]
             // test that pipeline produces expected FASTQ files

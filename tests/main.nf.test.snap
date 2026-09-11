@@ -1,4 +1,63 @@
 {
+    "main.nf demultiplexes when full samplesheet used -- Takara SMART-Seq mRNA 3'DE": {
+        "content": [
+            [
+                "foo1_S1_L001_R1_001.fastq.gz:md5,c823a49f86126141194700b6792aebeb",
+                "foo1_S1_L001_R2_001.fastq.gz:md5,657cea18231625dc2808ab92b9f1e187",
+                "foo1_S1_L002_R1_001.fastq.gz:md5,4e85f29acec85d59f8a4d9e1a899ebca",
+                "foo1_S1_L002_R2_001.fastq.gz:md5,f34548c59390e17d8f93737288b4a7f5",
+                "foo2_S1_L001_R1_001.fastq.gz:md5,8436d501fbf6c6d32f7f0eb383c214c8",
+                "foo2_S1_L001_R2_001.fastq.gz:md5,0b5e7daa5934c1bef7b46570fdd362a9",
+                "foo2_S1_L002_R1_001.fastq.gz:md5,a5f9648bcfd5225ab1a63c239baa1c63",
+                "foo2_S1_L002_R2_001.fastq.gz:md5,f6f076f4768f9f5e51d00dcc888f9958",
+                "foo3_S1_L001_R1_001.fastq.gz:md5,8196b4259e1608fe960ac801dfdd6113",
+                "foo3_S1_L001_R2_001.fastq.gz:md5,4c30e883c2646cdcebbbbe918952ba45",
+                "foo3_S1_L002_R1_001.fastq.gz:md5,6ebaa3d6f6be36c4de84cdf5ad640f84",
+                "foo3_S1_L002_R2_001.fastq.gz:md5,d69cfb9741a2fcb5ab118f31b0ceb3aa",
+                "bar1_S2_L001_R1_001.fastq.gz:md5,843a06802a4394a1cd970bd1c7a2c28c",
+                "bar1_S2_L001_R2_001.fastq.gz:md5,bd0d151c35772e23f36e503f83a3f882",
+                "bar1_S2_L002_R1_001.fastq.gz:md5,49cb576469629723d3b1a8611db5cbe9",
+                "bar1_S2_L002_R2_001.fastq.gz:md5,c6cae7849511fc47c3da6fb4d4d1c7c2",
+                "bar2_S2_L001_R1_001.fastq.gz:md5,e896b5037312926889f9652d9a80a50a",
+                "bar2_S2_L001_R2_001.fastq.gz:md5,f3666536cbe431365ba88110aee7f8d5",
+                "bar2_S2_L002_R1_001.fastq.gz:md5,7ba89ce14d7d93a51aa4f962cb905724",
+                "bar2_S2_L002_R2_001.fastq.gz:md5,435819b26e8536e71b68eb8ef9872502",
+                "bar3_S2_L001_R1_001.fastq.gz:md5,7240e8b8a26dac83dff4549d1c84f0bb",
+                "bar3_S2_L001_R2_001.fastq.gz:md5,faad5283893f2378962b5e07f1321fd0",
+                "bar3_S2_L002_R1_001.fastq.gz:md5,bf25dd037eb7141ba08fa8babce5749a",
+                "bar3_S2_L002_R2_001.fastq.gz:md5,e268eed4386ab3d46eec0a81cd105b82",
+                "baz1_S3_L001_R1_001.fastq.gz:md5,5cf8c6480832024f2d874c16fd234cad",
+                "baz1_S3_L001_R2_001.fastq.gz:md5,38f52aa1c328e948a817a5403f2c12c9",
+                "baz1_S3_L002_R1_001.fastq.gz:md5,1e18f105d683ce0ae9e4f25beea8dab1",
+                "baz1_S3_L002_R2_001.fastq.gz:md5,cfa855f0ba795e5895736bba427ad95c",
+                "baz2_S3_L001_R1_001.fastq.gz:md5,563f447920a2d939cc74a35ae6b93559",
+                "baz2_S3_L001_R2_001.fastq.gz:md5,08172353499e806669f66115e80f18b3",
+                "baz2_S3_L002_R1_001.fastq.gz:md5,5239ad011e83e52c2b1a9e0de88ff1f0",
+                "baz2_S3_L002_R2_001.fastq.gz:md5,d7944bb3c8317859f9f0c7fb864b2e47",
+                "baz3_S3_L001_R1_001.fastq.gz:md5,4131244c2f9f239576b506cf257911e5",
+                "baz3_S3_L001_R2_001.fastq.gz:md5,52171573add1e6aff084cebca13eb4ce",
+                "baz3_S3_L002_R1_001.fastq.gz:md5,ddb7035e6eb8a7eda6ad82a08be4c7a0",
+                "baz3_S3_L002_R2_001.fastq.gz:md5,ed5730d2872a8762f0d3548c9d41e7fe",
+                "unmatched_takara_3de-0_seed-11_S1_L001_R1_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-0_seed-11_S1_L001_R2_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-1_seed-12_S1_L002_R1_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-1_seed-12_S1_L002_R2_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-2_seed-21_S2_L001_R1_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-2_seed-21_S2_L001_R2_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-3_seed-22_S2_L002_R1_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-3_seed-22_S2_L002_R2_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-4_seed-31_S3_L001_R1_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-4_seed-31_S3_L001_R2_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-5_seed-32_S3_L002_R1_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e",
+                "unmatched_takara_3de-5_seed-32_S3_L002_R2_001.fastq.gz:md5,d41d8cd98f00b204e9800998ecf8427e"
+            ]
+        ],
+        "timestamp": "2026-09-11T16:41:44.562288873",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.4"
+        }
+    },
     "main.nf produces child FASTQs from single parent files -- Takara SMART-Seq mRNA 3'DE": {
         "content": [
             [
