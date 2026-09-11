@@ -76,6 +76,9 @@ nextflow_pipeline {
             // FASTQs should contain the same number of reads as the input files
             assert r1Path.linesGzip.size() == 200000
             assert r2Path.linesGzip.size() == 200000
+
+            // the input structure used here (only one child per parent) should not produce unmatched files
+            assert ! path("${launchDir}/demux/unmatched").exists()
         }
 
     }

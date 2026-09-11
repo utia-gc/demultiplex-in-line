@@ -32,14 +32,25 @@ process fqtk_demux {
     )
 
     script:
-    """
-    fqtk demux \\
-        --inputs ${parentReadSet.fastqR1} ${parentReadSet.fastqR2} \\
-        --read-structures ${readStructures} \\
-        --sample-metadata ${sampleMetadata} \\
-        --output . \\
-        --unmatched-prefix "unmatched_${parentReadSet.readSetName}" \\
-        --threads ${task.cpus} \\
-        ${cliArgs}
-    """
+    // demultiplex the parent reads when there are multiple children that can be resolved by inline indexes
+    // otherwise, if there is only one child we assume the UDIs are good enough for demultiplexing
+    // so just copy the parent files over with the "child-like" names
+    if (childrenMetadata.size() > 1) {
+        """
+        fqtk demux \\
+            --inputs ${parentReadSet.fastqR1} ${parentReadSet.fastqR2} \\
+            --read-structures ${readStructures} \\
+            --sample-metadata ${sampleMetadata} \\
+            --output . \\
+            --unmatched-prefix "unmatched_${parentReadSet.readSetName}" \\
+            --threads ${task.cpus} \\
+            ${cliArgs}
+        """
+    } else {
+        def childMetadata = childrenMetadata.first()
+        """
+        cp ${parentReadSet.fastqR1} ${childMetadata.childReadSetName}.R1.fq.gz
+        cp ${parentReadSet.fastqR2} ${childMetadata.childReadSetName}.R2.fq.gz
+        """
+    }
 }

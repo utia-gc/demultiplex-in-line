@@ -20,10 +20,10 @@
     },
     "main.nf copies single-row files -- Takara SMART-Seq mRNA 3'DE": {
         "content": [
-            "foo1_S1_L001_R1_001.fastq.gz:md5,c823a49f86126141194700b6792aebeb",
-            "foo1_S1_L001_R2_001.fastq.gz:md5,657cea18231625dc2808ab92b9f1e187"
+            "foo1_S1_L001_R1_001.fastq.gz:md5,947c7743feed9cf119702ad7ea428a17",
+            "foo1_S1_L001_R2_001.fastq.gz:md5,88c9038850ea2cb606163af6d7368a97"
         ],
-        "timestamp": "2026-09-11T14:50:41.348729898",
+        "timestamp": "2026-09-11T15:54:52.545909834",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.4"
