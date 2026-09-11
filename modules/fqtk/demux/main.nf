@@ -26,7 +26,8 @@ process fqtk_demux {
     output:
     record(
         parentReadSet: parentReadSet,
-        childReads: files('*.fq.gz'),
+        childrenMetadata: childrenMetadata,
+        childrenReads: files('*.fq.gz'),
         metrics: file('demux-metrics.txt', optional: true)
     )
 
