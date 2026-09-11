@@ -1,5 +1,12 @@
+nextflow.enable.types = true
+
+include { ReadSet; ChildMetadata } from '../../../modules/fqtk/collect_demux_sample_metadata'
+
+/** Run fqtk demux
+ * @see https://github.com/fulcrumgenomics/fqtk#fqtk-demux
+ */
 process fqtk_demux {
-    tag "${multiplexedFastqPrefix}"
+    tag "${parentReadSet.readSetName}"
 
     label 'fqtk'
 
@@ -8,22 +15,29 @@ process fqtk_demux {
     label 'huge_cpu'
 
     input:
-    tuple val(multiplexedFastqPrefix), path(multiplexedFastqR1), path(multiplexedFastqR2), path(fqtkSamplesheet)
-    val readStructures
-    val cliArgs
+    record(
+        parentReadSet: ReadSet,
+        childrenMetadata: List<ChildMetadata>,
+        sampleMetadata: Path
+    )
+    readStructures: String
+    cliArgs: String
 
     output:
-    tuple val(multiplexedFastqPrefix), path('*.R1.fq.gz'), path('*.R2.fq.gz'), emit: demuxFastqs
-    tuple val(multiplexedFastqPrefix), path('demux-metrics.txt'), emit: demuxMetrics
+    record(
+        parentReadSet: parentReadSet,
+        childReads: files('*.fq.gz'),
+        metrics: file('demux-metrics.txt', optional: true)
+    )
 
     script:
     """
     fqtk demux \\
-        --inputs ${multiplexedFastqR1} ${multiplexedFastqR2} \\
+        --inputs ${parentReadSet.fastqR1} ${parentReadSet.fastqR2} \\
         --read-structures ${readStructures} \\
-        --sample-metadata ${fqtkSamplesheet} \\
+        --sample-metadata ${sampleMetadata} \\
         --output . \\
-        --unmatched-prefix "unmatched_${multiplexedFastqPrefix}" \\
+        --unmatched-prefix "unmatched_${parentReadSet.readSetName}" \\
         --threads ${task.cpus} \\
         ${cliArgs}
     """
