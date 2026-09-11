@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -24,4 +24,10 @@ fqtk does output a metrics file, though, so it wouldn't be a major issue to add 
 
 ## Decision
 
+Demultiplex with `fqtk demux`
+
 ## Consequences
+
+Rewrite samplesheet and input parsing scripts to format data for input to `fqtk demux`.
+
+There's no nice QC module to use with MultiQC right now, so publish metrics files to a qc output directory.
