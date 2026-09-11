@@ -6,34 +6,46 @@
 	"items": {
 		"type": "object",
 		"required": [
-			"sample_fastq_prefix",
-			"inline",
-			"multiplexed_fastq_file_path_r1"
+			"study_name",
+			"child_output_name",
+			"inline_index",
+			"parent_output_name",
+			"parent_fastq_path_r1"
 		],
 		"properties": {
-			"sample_fastq_prefix": {
+			"study_name": {
 				"type": "string",
 				"pattern": "^\\S+$",
-				"errorMessage": "Sample FASTQ prefix must be provided and cannot contain spaces"
+				"errorMessage": "Child FASTQ file must be associated with a STUDY."
 			},
-			"inline": {
+			"child_output_name": {
 				"type": "string",
 				"pattern": "^\\S+$",
-				"errorMessage": "Inline barcode must be provided"
+				"errorMessage": "Child FASTQ file must have an output name."
 			},
-			"multiplexed_fastq_file_path_r1": {
+			"inline_index": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Inline index sequence must be provided."
+			},
+			"parent_output_name": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Parent FASTQ file must have a name."
+			},
+			"parent_fastq_path_r1": {
 				"type": "string",
 				"pattern": "^\\S+\\.f(ast)?q\\.gz$",
 				"format": "file-path",
 				"exists": true,
-				"errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+				"errorMessage": "FASTQ file for R1 must be provided, cannot contain spaces, and must have extension '.fq.gz' or '.fastq.gz'."
 			},
-			"multiplexed_fastq_file_path_r2": {
+			"parent_fastq_path_r2": {
 				"type": "string",
 				"pattern": "^\\S+\\.f(ast)?q\\.gz$",
 				"format": "file-path",
 				"exists": true,
-				"errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+				"errorMessage": "FASTQ file for R2 cannot contain spaces, and must have extension '.fq.gz' or '.fastq.gz'."
 			}
 		}
 	}

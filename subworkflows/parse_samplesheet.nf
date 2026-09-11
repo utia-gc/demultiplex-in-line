@@ -1,76 +1,49 @@
+nextflow.enable.types = true
+
 include { samplesheetToList } from 'plugin/nf-schema'
 
 workflow Parse_Samplesheet {
     take:
-    samplesheet
+    samplesheet: Path
 
     main:
-    ch_samplesheetComposite = channel.fromList(
+    ch_demuxData = channel.fromList(
             samplesheetToList(samplesheet, "${projectDir}/assets/schema_samplesheet.json")
         )
-        .map { sampleFastqPrefix, inline, multiplexedFastqFilePathR1, multiplexedFastqFilePathR2 ->
-            def fastqR1Prefix = multiplexedFastqFilePathR1.name.replaceFirst(/_R1_001\.fastq\.gz/, "")
-            def fastqR2Prefix = multiplexedFastqFilePathR2.name.replaceFirst(/_R2_001\.fastq\.gz/, "")
+        .map { studyName, childOutputName, inlineIndex, parentOutputName, parentFastqPathR1, parentFastqPathR2 ->
+            // infer the name of the parent read set by stripping extensions and common prefixes and suffixes from the name
+            def parentReadSetName = parentFastqPathR1.simpleName.replace("_R1_001", "")
+            // set the name for the child read set
+            // replace the parent output name with the child output name in the parent read set name
+            def childReadSetName = parentReadSetName.replace(parentOutputName, childOutputName)
 
-            if (fastqR1Prefix != fastqR2Prefix) {
-                error("R1 (${multiplexedFastqFilePathR1}) and R2(${multiplexedFastqFilePathR2}) files have different prefixes. Check that files are named correctly and properly paired.")
-            }
+            // build data structures to track downstream information
+            def parentFastqs = record(
+                readSetName: parentReadSetName,
+                fastqR1: parentFastqPathR1,
+                fastqR2: parentFastqPathR2,
+            )
+            def childMetadata = record(
+                studyName: studyName,
+                childOutputName: childOutputName,
+                inlineIndex: inlineIndex,
+                parentOutputName: parentOutputName,
+                childReadSetName: childReadSetName,
+            )
 
-            return [fastqR1Prefix, multiplexedFastqFilePathR1, multiplexedFastqFilePathR2, sampleFastqPrefix, inline]
-        }
-
-    ch_multiplexedFastqs = ch_samplesheetComposite
-        .map { multiplexedFastqPrefix, multiplexedFastqFilePathR1, multiplexedFastqFilePathR2, _sampleFastqPrefix, _inline ->
-            return [multiplexedFastqPrefix, [multiplexedFastqFilePathR1, multiplexedFastqFilePathR2]]
+            return [parentFastqs, childMetadata]
         }
         .groupBy()
-        .map { multiplexedFastqPrefix, multiplexedFastqFilePaths ->
-            return [multiplexedFastqPrefix, multiplexedFastqFilePaths.head()]
-        }
+        .map { parentFastqs, childrenMetadata ->
+            def demuxData = record(
+                parentReadSet: parentFastqs,
+                childrenMetadata: childrenMetadata.toSorted(),
+            )
 
-    ch_sampleInfo = ch_samplesheetComposite
-        .map { multiplexedFastqPrefix, _multiplexedFastqFilePathR1, _multiplexedFastqFilePathR2, sampleFastqPrefix, inline ->
-            return [multiplexedFastqPrefix, [sampleFastqPrefix, inline]]
+            return demuxData
         }
-        .groupBy()
-        .map { multiplexedFastqPrefix, sampleInfo ->
-            // don't really care about sort order, just need it to be deterministic
-            return [multiplexedFastqPrefix, sampleInfo.toSorted()]
-        }
-
-    ch_fqtkSamplesheet = collect_fqtk_samplesheet(ch_sampleInfo)
-
-    ch_fastqsAndFqtkSamplesheet = ch_multiplexedFastqs
-        .join(ch_fqtkSamplesheet, by: 0)
-        .map { multiplexedFastqPrefix, multiplexedFastqs, fqtkSamplesheet ->
-            return [multiplexedFastqPrefix, multiplexedFastqs[0], multiplexedFastqs[1], fqtkSamplesheet]
-        }
+    ch_demuxData.view(tag: 'ch_demuxData')
 
     emit:
-    fastqsAndFqtkSamplesheet = ch_fastqsAndFqtkSamplesheet
-}
-
-
-/** Create a samplesheet for fqtk demux
- *
- * Given a multiplexed FASTQ prefix and a list of pairs of [sample level FASTQ prefix, inline barcode],
- * write a samplesheet for fqtk.
- *
- * @see https://docs.seqera.io/nextflow/tutorials/static-types-operators#collectfile
- */
-process collect_fqtk_samplesheet {
-    tag "${multiplexedFastqPrefix}"
-
-    input:
-    tuple val(multiplexedFastqPrefix), val(sampleInfo)
-
-    output:
-    tuple val(multiplexedFastqPrefix), path("${multiplexedFastqPrefix}_fqtk-samplesheet.tsv")
-
-    exec:
-    def path = task.workDir.resolve("${multiplexedFastqPrefix}_fqtk-samplesheet.tsv")
-    path << "sample_id\tbarcode\n"
-    sampleInfo.each { sampleFastqPrefix, inlineBarcode ->
-        path << "${sampleFastqPrefix}\t${inlineBarcode}\n"
-    }
+    demuxData: Channel<Record> = ch_demuxData
 }
