@@ -1,0 +1,264 @@
+nextflow_pipeline {
+
+    name "Test Workflow main.nf"
+    script "main.nf"
+
+    test("main.nf fails -- no samplesheet.") {
+        tag 'nf-schema'
+
+        when {
+            params {
+                samplesheet = null
+                readStructures = "+T +T"
+            }
+        }
+
+        then {
+            // nf-schema validateParameters() causes workflow failure with exit status 1 when required param(s) not supplied
+            assert workflow.failed
+            assert workflow.exitStatus == 1
+            // nf-schema validateParameters() throws error messages on stdout and stderr when required param(s) not supplied
+            assert workflow.stdout.contains('ERROR ~ Validation of pipeline parameters failed!')
+            assert workflow.stderr.contains('* Missing required parameter(s): samplesheet')
+        }
+
+    }
+
+
+    test("main.nf fails -- no readStructures.") {
+        tag 'nf-schema'
+
+        when {
+            params {
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet.csv"
+                readStructures = null
+            }
+        }
+
+        then {
+            // nf-schema validateParameters() causes workflow failure with exit status 1 when required param(s) not supplied
+            assert workflow.failed
+            assert workflow.exitStatus == 1
+            // nf-schema validateParameters() throws error messages on stdout and stderr when required param(s) not supplied
+            assert workflow.stdout.contains('ERROR ~ Validation of pipeline parameters failed!')
+            assert workflow.stderr.contains('* Missing required parameter(s): readStructures')
+        }
+
+    }
+
+
+    test("main.nf copies single-row files -- Takara SMART-Seq mRNA 3'DE") {
+        tag 'takara-smart-seq-mrna-3p-de'
+
+        when {
+            params {
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet_single-row.csv"
+                readStructures = "+T 6B+T"
+            }
+        }
+
+        then {
+            // test workflow status
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 2
+
+            // test that pipeline produces expected FASTQ files
+            // FASTQs should have Illumina-style name, exist on disk, contain the same number reads, and be reproducible
+            def r1Path = path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R1_001.fastq.gz")
+            def r2Path = path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R2_001.fastq.gz")
+            assert r1Path.exists()
+            assert r2Path.exists()
+            assert r1Path.linesGzip.size() == r2Path.linesGzip.size()
+            assert snapshot(
+                r1Path,
+                r2Path
+            ).match()
+            // FASTQs should contain the same number of reads as the input files
+            assert r1Path.linesGzip.size() == 200000
+            assert r2Path.linesGzip.size() == 200000
+
+            // the input structure used here (only one child per parent) should not produce unmatched files
+            assert ! path("${launchDir}/demux/unmatched").exists()
+        }
+
+    }
+
+
+    test("main.nf produces child FASTQs from single parent files -- Takara SMART-Seq mRNA 3'DE") {
+        tag 'takara-smart-seq-mrna-3p-de'
+
+        when {
+            params {
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet_single-parent-set.csv"
+                readStructures = "+T 6B+T"
+            }
+        }
+
+        then {
+            // test workflow status
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 2
+
+            def expectedFastqPairs = [
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R2_001.fastq.gz")
+                ],
+            ]
+            // test that pipeline produces expected FASTQ files
+            // FASTQs should have Illumina-style name, exist on disk, contain the same number reads, and be reproducible
+            expectedFastqPairs.each { r1Path, r2Path ->
+                assert r1Path.exists()
+                assert r2Path.exists()
+                assert r1Path.linesGzip.size() == r2Path.linesGzip.size()
+            }
+
+            // test reproducibility of fastqs
+            assert snapshot(expectedFastqPairs.flatten()).match()
+        }
+
+    }
+
+
+    test("main.nf demultiplexes when full samplesheet used -- Takara SMART-Seq mRNA 3'DE") {
+        tag 'takara-smart-seq-mrna-3p-de'
+
+        when {
+            params {
+                samplesheet = "tests/data/samplesheets/takara_3pde_samplesheet.csv"
+                readStructures = "+T 6B+T"
+            }
+        }
+
+        then {
+            // test workflow status
+            assert workflow.success
+            assert workflow.trace.succeeded().size() == 12
+
+            def expectedFastqPairs = [
+                // files for 'fizz' study
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo1_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo2_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/foo3_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar1_S2_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar2_S2_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/fizz/fastq/bar3_S2_L002_R2_001.fastq.gz")
+                ],
+                // files for 'buzz' study
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz1_S3_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz2_S3_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/buzz/fastq/baz3_S3_L002_R2_001.fastq.gz")
+                ],
+                // unmatched files
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-0_seed-11_S1_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-0_seed-11_S1_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-1_seed-12_S1_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-1_seed-12_S1_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-2_seed-21_S2_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-2_seed-21_S2_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-3_seed-22_S2_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-3_seed-22_S2_L002_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-4_seed-31_S3_L001_R2_001.fastq.gz")
+                ],
+                [
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-5_seed-32_S3_L002_R1_001.fastq.gz"),
+                    path("${launchDir}/demux/unmatched/fastq/unmatched_takara_3de-5_seed-32_S3_L002_R2_001.fastq.gz")
+                ],
+            ]
+            // test that pipeline produces expected FASTQ files
+            // FASTQs should have Illumina-style name, exist on disk, contain the same number reads, and be reproducible
+            expectedFastqPairs.each { r1Path, r2Path ->
+                assert r1Path.exists()
+                assert r2Path.exists()
+                assert r1Path.linesGzip.size() == r2Path.linesGzip.size()
+            }
+
+            // test reproducibility of fastqs
+            assert snapshot(expectedFastqPairs.flatten()).match()
+        }
+
+    }
+}

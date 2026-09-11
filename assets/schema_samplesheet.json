@@ -1,0 +1,52 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "utia-gc/demultiplex-in-line params.samplesheet schema",
+	"description": "Schema for the samplesheet used as input to utia-gc/demultiplex-in-line",
+	"type": "array",
+	"items": {
+		"type": "object",
+		"required": [
+			"study_name",
+			"child_output_name",
+			"inline_index",
+			"parent_output_name",
+			"parent_fastq_path_r1"
+		],
+		"properties": {
+			"study_name": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Child FASTQ file must be associated with a STUDY."
+			},
+			"child_output_name": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Child FASTQ file must have an output name."
+			},
+			"inline_index": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Inline index sequence must be provided."
+			},
+			"parent_output_name": {
+				"type": "string",
+				"pattern": "^\\S+$",
+				"errorMessage": "Parent FASTQ file must have a name."
+			},
+			"parent_fastq_path_r1": {
+				"type": "string",
+				"pattern": "^\\S+\\.f(ast)?q\\.gz$",
+				"format": "file-path",
+				"exists": true,
+				"errorMessage": "FASTQ file for R1 must be provided, cannot contain spaces, and must have extension '.fq.gz' or '.fastq.gz'."
+			},
+			"parent_fastq_path_r2": {
+				"type": "string",
+				"pattern": "^\\S+\\.f(ast)?q\\.gz$",
+				"format": "file-path",
+				"exists": true,
+				"errorMessage": "FASTQ file for R2 cannot contain spaces, and must have extension '.fq.gz' or '.fastq.gz'."
+			}
+		}
+	}
+}

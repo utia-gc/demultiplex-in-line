@@ -1,0 +1,2 @@
+study_name,child_output_name,inline_index,parent_output_name,parent_fastq_path_r1,parent_fastq_path_r2
+fizz,foo1,CTAGCT,takara_3de-0_seed-11,tests/data/reads/raw/takara_3de-0_seed-11_S1_L001_R1_001.fastq.gz,tests/data/reads/raw/takara_3de-0_seed-11_S1_L001_R2_001.fastq.gz

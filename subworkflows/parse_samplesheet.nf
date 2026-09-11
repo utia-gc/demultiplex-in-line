@@ -1,39 +1,49 @@
+nextflow.enable.types = true
+
+include { samplesheetToList } from 'plugin/nf-schema'
+
 workflow Parse_Samplesheet {
     take:
-        samplesheet
+    samplesheet: Path
 
     main:
-        Channel
-            .fromPath( samplesheet, checkIfExists: true )
-            .splitCsv( header: true, sep: ',' )
-            /*
-             * Create a single massive map for all the decode samples
-             *
-             * This map has a single entry for each multiplexed sample name.
-             * Each multiplexed sample name has a map of in-line ID to demultiplexed sample name and project.
-             */
-            .collect()
-            .map {
-                LinkedHashMap sampleDecode = [:]
-                it.each{ row ->
-                    // put multiplexed sample name in sample decode with empty map if the name isn't already
-                    if (sampleDecode.get(row['multiplexedSampleName']) == null) {
-                        sampleDecode.put(row['multiplexedSampleName'], [:])
-                    }
-                    // add demultiplexed sample name and project for each in-line index
-                    sampleDecode[row['multiplexedSampleName']].put(
-                        row['inLineIndex'],
-                        [
-                            'demultiplexedSampleName': row['demultiplexedSampleName'],
-                            'project':                 row['project'],
-                        ]
-                    )
-                }
+    ch_demuxData = channel.fromList(
+            samplesheetToList(samplesheet, "${projectDir}/assets/schema_samplesheet.json")
+        )
+        .map { studyName, childOutputName, inlineIndex, parentOutputName, parentFastqPathR1, parentFastqPathR2 ->
+            // infer the name of the parent read set by stripping extensions and common prefixes and suffixes from the name
+            def parentReadSetName = parentFastqPathR1.simpleName.replace("_R1_001", "")
+            // set the name for the child read set
+            // replace the parent output name with the child output name in the parent read set name
+            def childReadSetName = parentReadSetName.replace(parentOutputName, childOutputName)
 
-                return sampleDecode
-            }
-            .set { ch_sampleDecodes }
+            // build data structures to track downstream information
+            def parentFastqs = record(
+                readSetName: parentReadSetName,
+                fastqR1: parentFastqPathR1,
+                fastqR2: parentFastqPathR2,
+            )
+            def childMetadata = record(
+                studyName: studyName,
+                childOutputName: childOutputName,
+                inlineIndex: inlineIndex,
+                parentOutputName: parentOutputName,
+                childReadSetName: childReadSetName,
+            )
+
+            return [parentFastqs, childMetadata]
+        }
+        .groupBy()
+        .map { parentFastqs, childrenMetadata ->
+            def demuxData = record(
+                parentReadSet: parentFastqs,
+                childrenMetadata: childrenMetadata.toSorted(),
+            )
+
+            return demuxData
+        }
+    ch_demuxData.view(tag: 'ch_demuxData')
 
     emit:
-        sampleDecodes = ch_sampleDecodes
+    demuxData: Channel<Record> = ch_demuxData
 }
