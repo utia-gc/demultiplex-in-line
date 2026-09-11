@@ -1,5 +1,5 @@
 .PHONY: test_data
-test_data: tests/data/samplesheets/takara_3pde_samplesheet.csv tests/data/samplesheets/takara_3pde_samplesheet_single-row.csv tests/data/samplesheets/takara_3pde_samplesheet_single-sample.csv
+test_data: tests/data/samplesheets/takara_3pde_samplesheet.csv tests/data/samplesheets/takara_3pde_samplesheet_single-row.csv tests/data/samplesheets/takara_3pde_samplesheet_single-sample.csv tests/data/samplesheets/takara_3pde_samplesheet_single-parent-set.csv
 	@echo "Made test data files"
 
 .cache/sentinels/sim_illumina_pe_fastqs.sentinel: src/bash/sim_illumina_pe_fastqs.sh
@@ -22,3 +22,7 @@ tests/data/samplesheets/takara_3pde_samplesheet_single-row.csv: tests/data/sampl
 tests/data/samplesheets/takara_3pde_samplesheet_single-sample.csv: tests/data/samplesheets/takara_3pde_samplesheet.csv
 	@head -n 1 tests/data/samplesheets/takara_3pde_samplesheet.csv > $@
 	@grep ',baz1,' tests/data/samplesheets/takara_3pde_samplesheet.csv >> $@
+
+tests/data/samplesheets/takara_3pde_samplesheet_single-parent-set.csv: tests/data/samplesheets/takara_3pde_samplesheet.csv
+	@head -n 1 tests/data/samplesheets/takara_3pde_samplesheet.csv > $@
+	@grep ',takara_3de-4_seed-31,' tests/data/samplesheets/takara_3pde_samplesheet.csv >> $@
